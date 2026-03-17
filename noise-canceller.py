@@ -500,12 +500,10 @@ class AudioFileProcessor:
                 chunk = audio_data[start_idx:end_idx]
 
                 if len(chunk) < self.samples_per_chunk:
-                    chunk = np.concatenate(
-                        [
-                            chunk,
-                            np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16),
-                        ]
-                    )
+                    chunk = np.concatenate([
+                        chunk,
+                        np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16),
+                    ])
 
                 audio_frame = rtc.AudioFrame(
                     data=chunk.tobytes(),
@@ -560,7 +558,8 @@ class AudioFileProcessor:
         # Set up credentials on the FrameProcessor so the underlying Enhancer
         # can authenticate with the ai-coustics service.
         token = (
-            api.AccessToken(
+            api
+            .AccessToken(
                 os.environ["LIVEKIT_API_KEY"],
                 os.environ["LIVEKIT_API_SECRET"],
             )
@@ -607,12 +606,10 @@ class AudioFileProcessor:
                 chunk = audio_data[start_idx:end_idx]
 
                 if len(chunk) < self.samples_per_chunk:
-                    chunk = np.concatenate(
-                        [
-                            chunk,
-                            np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16),
-                        ]
-                    )
+                    chunk = np.concatenate([
+                        chunk,
+                        np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16),
+                    ])
 
                 audio_frame = rtc.AudioFrame(
                     data=chunk.tobytes(),
@@ -661,7 +658,8 @@ class AudioFileProcessor:
 
         try:
             publisher_token = (
-                api.AccessToken(
+                api
+                .AccessToken(
                     os.environ["LIVEKIT_API_KEY"],
                     os.environ["LIVEKIT_API_SECRET"],
                 )
@@ -829,9 +827,10 @@ class AudioFileProcessor:
             chunk = audio_data[start_idx:end_idx]
 
             if len(chunk) < self.samples_per_chunk:
-                chunk = np.concatenate(
-                    [chunk, np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16)]
-                )
+                chunk = np.concatenate([
+                    chunk,
+                    np.zeros(self.samples_per_chunk - len(chunk), dtype=np.int16),
+                ])
 
             audio_frame = rtc.AudioFrame(
                 data=chunk.tobytes(),
@@ -973,7 +972,9 @@ class AudioFileProcessor:
 class FileAudioSource(rtc.AudioSource):
     """Custom audio source that streams from file data"""
 
-    def __init__(self, audio_data, sample_rate=DEFAULT_SAMPLERATE, num_channels=CHANNELS):
+    def __init__(
+        self, audio_data, sample_rate=DEFAULT_SAMPLERATE, num_channels=CHANNELS
+    ):
         super().__init__(sample_rate, num_channels)
         self.audio_data = audio_data
 
@@ -1281,7 +1282,7 @@ def main():
   uv run noise-canceller.py song.flac --filter BVC
   uv run noise-canceller.py audio.m4a --filter WebRTC
   uv run noise-canceller.py audio.m4a --filter aic-quail-l
-  uv run noise-canceller.py audio.m4a --filter aic-quail-vfl --enhancement-level 0.8
+  uv run noise-canceller.py audio.m4a --filter aic-quail-vfl --ai-coustics-enhancement-level 0.8
   uv run noise-canceller.py audio.m4a --filter all
   uv run noise-canceller.py audio.m4a -o processed.wav --silent
   uv run noise-canceller.py input.wav -t ground_truth.txt
@@ -1429,13 +1430,17 @@ def main():
             sys.exit(1)
 
     # Validate enhancement level if provided
-    if args.ai_coustics_enhancement_level is not None and not (0.0 <= args.ai_coustics_enhancement_level <= 1.0):
+    if args.ai_coustics_enhancement_level is not None and not (
+        0.0 <= args.ai_coustics_enhancement_level <= 1.0
+    ):
         if not args.silent:
             console.print(
-                "❌ [red]--enhancement-level must be between 0.0 and 1.0[/red]"
+                "❌ [red]--ai-coustics-enhancement-level must be between 0.0 and 1.0[/red]"
             )
         else:
-            sys.stderr.write("ERROR: --enhancement-level must be between 0.0 and 1.0\n")
+            sys.stderr.write(
+                "ERROR: --ai-coustics-enhancement-level must be between 0.0 and 1.0\n"
+            )
         sys.exit(1)
 
     def build_ai_coustics_filter(model: EnhancerModel):
@@ -1451,7 +1456,7 @@ def main():
                 )
             elif not args.silent:
                 console.print(
-                    "⚠️  [yellow]Ignoring --enhancement-level: installed ai-coustics "
+                    "⚠️  [yellow]Ignoring --ai-coustics-enhancement-level: installed ai-coustics "
                     "plugin does not support ModelParameters yet[/yellow]"
                 )
 
@@ -1484,26 +1489,22 @@ def main():
         else:
             out = Path(f"output/{input_path.stem}-{fk.lower()}-processed.wav")
         out.parent.mkdir(parents=True, exist_ok=True)
-        filter_configs.append(
-            {
-                "filter": fk,
-                "noise_filter": nf,
-                "use_webrtc": use_webrtc,
-                "output": str(out),
-            }
-        )
+        filter_configs.append({
+            "filter": fk,
+            "noise_filter": nf,
+            "use_webrtc": use_webrtc,
+            "output": str(out),
+        })
 
-    _config.update(
-        {
-            "input_file": str(input_path),
-            "filters": filter_configs,
-            "silent": args.silent,
-            "transcript": args.transcript,
-            "stt": args.stt,
-            "direct": args.direct,
-            "sample_rate": args.sample_rate,
-        }
-    )
+    _config.update({
+        "input_file": str(input_path),
+        "filters": filter_configs,
+        "silent": args.silent,
+        "transcript": args.transcript,
+        "stt": args.stt,
+        "direct": args.direct,
+        "sample_rate": args.sample_rate,
+    })
 
     # Replicate the agents CLI "connect" command: create a real room via the
     # API, then simulate_job(fake_job=False) so the entrypoint gets a genuine
